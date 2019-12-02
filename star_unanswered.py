@@ -6,7 +6,7 @@ and saves them if not already saved
 
 import argparse
 import inspect
-from slackclient import SlackClient
+import slack
 
 PARSER = argparse.ArgumentParser(description='Star unanswered threads.')
 PARSER.add_argument('user', type=str, choices=['panda', 'erika'],
@@ -34,7 +34,7 @@ def get_channels(self):
     API CALL conversations.list has a limit of 20 per minute
     It is used used once
     """
-    res = self.api_call("conversations.list")
+    res = self.conversations_list()
     channels = []
     if not res.get('ok'):
         print(inspect.currentframe().f_code.co_name)
@@ -53,7 +53,7 @@ def get_threads(self, ch_id):
     API CALL conversations.history has a limit of 50 per minute
     It is used about once per channel (100 messages per page)
     """
-    res = self.api_call("conversations.history", channel=ch_id[0])
+    res = self.conversations_history(channel=ch_id[0])
     timestamps = set()
 
     if not res.get('ok'):
@@ -68,7 +68,7 @@ def get_threads(self, ch_id):
             timestamps.add(msg.get('ts'))
     while res.get('has_more'):
         next_cursor = res.get('response_metadata').get('next_cursor')
-        res = self.api_call("conversations.history", channel=ch_id[0], cursor=next_cursor)
+        res = self.conversations_history(channel=ch_id[0], cursor=next_cursor)
         if not res.get('ok'):
             print(inspect.currentframe().f_code.co_name)
         else:
@@ -87,7 +87,7 @@ def get_last_reply(self, ch_id, thread_ts):
     API CALL conversations.replies has a limit of 50 per minute
     It is used about once per thread
     """
-    res = self.api_call("conversations.replies", channel=ch_id[0], ts=thread_ts, limit=1)
+    res = self.conversations_replies(channel=ch_id[0], ts=thread_ts, limit=1)
     if not res.get('ok'):
         print(inspect.currentframe().f_code.co_name)
         return False
@@ -118,7 +118,7 @@ def add_star(self, ch_id, reply_ts):
     API CALL conversations.replies has a limit of 20 per minute
     It is used depending on how many bananas are washed.
     """
-    res = self.api_call("stars.add", channel=ch_id[0], timestamp=reply_ts)
+    res = self.stars_add(channel=ch_id[0], timestamp=reply_ts)
     if not res.get('ok'):
         if res.get('error') == 'already_starred':
             return False
@@ -129,7 +129,7 @@ def add_star(self, ch_id, reply_ts):
 
 
 # Initialize the connection to the slackbot
-SLACK_CLIENT = SlackClient(SLACK_BOT_TOKEN)
+SLACK_CLIENT = slack.WebClient(token=SLACK_BOT_TOKEN)
 CHANNELS = get_channels(SLACK_CLIENT)
 if CHANNELS:
     for channel in CHANNELS:
