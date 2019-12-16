@@ -4,6 +4,10 @@ looks for unanswered threads (reply or emoji)
 and saves them if not already saved
 """
 
+# TODO get all stars first, check against entry.
+# Slack is very unreliable about knowing if something has a star.
+# It's probably easier if I get the whole list locally first.
+
 import argparse
 import inspect
 import slack
@@ -26,6 +30,30 @@ def get_id():
     if USER.lower() == 'panda':
         return 'UNXCVUYHY'
     return ''
+
+def get_stars(self):
+
+    """
+    Gets the list of all stars. Returns the list of stars
+
+    API CALL stars.list has a limit of 50+ per minute
+    It is used used once
+    """
+    res = self.stars_list()
+    page = int(res.get('paging').get('page'))
+    stars = []
+    if not res.get('ok'):
+        print(inspect.currentframe().f_code.co_name)
+        return False
+    for entry in res.get('items'):
+        stars.append(entry.get('message').get('ts'))
+    while page < int(res.get('paging').get('pages')):
+        page += 1
+        res = self.stars_list(page=str(page))
+        for entry in res.get('items'):
+            stars.append(entry.get('message').get('ts'))
+    return stars
+
 
 def get_channels(self):
     """
@@ -96,7 +124,7 @@ def get_last_reply(self, ch_id, thread_ts):
     return res.get('messages')[0]
 
 
-def check_yourself_before_you_wreck_yourself(reply):
+def check_yourself_before_you_wreck_yourself(reply, stars):
     """
     Checks if the reply was by me, is uninteresting, got a reaction or is already saved.
     """
@@ -106,9 +134,9 @@ def check_yourself_before_you_wreck_yourself(reply):
         return False
     if reply.get('reactions') is not None:
         return False
-    if reply.get('is_starred') is not None:
-        if reply.get('is_starred'):
-            return False
+    if reply.get('ts') in stars:
+        stars.remove(reply.get('ts'))
+        return False
     return True
 
 def add_star(self, ch_id, reply_ts):
@@ -120,17 +148,16 @@ def add_star(self, ch_id, reply_ts):
     """
     res = self.stars_add(channel=ch_id[0], timestamp=reply_ts)
     if not res.get('ok'):
-        if res.get('error') == 'already_starred':
-            return False
         print(inspect.currentframe().f_code.co_name)
         print(res)
-        return True
-    return False
+        return False
+    return True
 
 
 # Initialize the connection to the slackbot
 SLACK_CLIENT = slack.WebClient(token=SLACK_BOT_TOKEN)
 CHANNELS = get_channels(SLACK_CLIENT)
+STARS = get_stars(SLACK_CLIENT)
 if CHANNELS:
     for channel in CHANNELS:
         if channel == "CR4REP6E4":
@@ -140,6 +167,6 @@ if CHANNELS:
         THREADS = get_threads(SLACK_CLIENT, channel)
         for thread in THREADS:
             last_reply = get_last_reply(SLACK_CLIENT, channel, thread)
-            if check_yourself_before_you_wreck_yourself(last_reply):
+            if check_yourself_before_you_wreck_yourself(last_reply, STARS):
                 if add_star(SLACK_CLIENT, channel, last_reply.get('ts')):
                     print(last_reply)
