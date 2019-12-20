@@ -4,10 +4,6 @@ looks for unanswered threads (reply or emoji)
 and saves them if not already saved
 """
 
-# TODO get all stars first, check against entry.
-# Slack is very unreliable about knowing if something has a star.
-# It's probably easier if I get the whole list locally first.
-
 import argparse
 import inspect
 import slack
