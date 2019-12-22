@@ -165,4 +165,6 @@ if CHANNELS:
             last_reply = get_last_reply(SLACK_CLIENT, channel, thread)
             if check_yourself_before_you_wreck_yourself(last_reply, STARS):
                 if add_star(SLACK_CLIENT, channel, last_reply.get('ts')):
-                    print(last_reply)
+                    print("--- Saved Reply ---")
+                    print(last_reply.get('text'))
+
