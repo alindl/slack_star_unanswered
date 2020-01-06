@@ -9,7 +9,7 @@ import inspect
 import slack
 
 PARSER = argparse.ArgumentParser(description='Star unanswered threads.')
-PARSER.add_argument('user', type=str, choices=['panda', 'erika'],
+PARSER.add_argument('user', type=str, choices=['panda', 'erika', 'andi', 'maresi'],
                     help="Your name dummy.")
 PARSER.add_argument('slack_token', metavar='slack_token', type=str,
                     help="The Slack token you can get from \
@@ -25,6 +25,10 @@ def get_id():
         return 'UPA1W86N8'
     if USER.lower() == 'panda':
         return 'UNXCVUYHY'
+    if USER.lower() == 'andi':
+        return 'USBS4L2KZ'
+    if USER.lower() == 'maresi':
+        return 'URZPHEJ1X'
     return ''
 
 def get_stars(self):
